@@ -241,8 +241,12 @@ def call_claude(api_key, msgs, df):
     proj_ctx = "\n\nLIVE PROJECT DATA:\n" + "\n".join(
         f"- {r['name']} | {r['client']} | {r['employee']} | {r['status']}"
         for _, r in df.iterrows())
-    # cache_control on the system prompt avoids re-tokenising the full project
-    # context on every message, reducing latency and API cost within a session.
+    api_msgs = [{"role": m["role"], "content": m["content"]} for m in msgs[-12:]]
+    # Anthropic API requires conversation to start with a user turn
+    while api_msgs and api_msgs[0]["role"] != "user":
+        api_msgs = api_msgs[1:]
+    if not api_msgs:
+        return "Please ask me a question to get started!"
     resp = client.messages.create(
         model="claude-sonnet-4-6",
         max_tokens=800,
@@ -251,7 +255,7 @@ def call_claude(api_key, msgs, df):
             "text": SYSTEM_PROMPT + proj_ctx,
             "cache_control": {"type": "ephemeral"},
         }],
-        messages=[{"role": m["role"], "content": m["content"]} for m in msgs[-12:]])
+        messages=api_msgs)
     return resp.content[0].text
 
 # ── STYLES ────────────────────────────────────────────────────────────────────
@@ -371,7 +375,7 @@ def _render_login():
             <div style="text-align:center;padding:16px 0 20px">
               <div style="font-size:40px;margin-bottom:8px">🤖</div>
               <div style="font-size:20px;font-weight:800;color:#0F172A;letter-spacing:-.3px">QUALESCE</div>
-              <div style="font-size:12px;color:#64748B;margin-top:4px">Project Manager Platform</div>
+              <div style="font-size:12px;color:#64748B;margin-top:4px">AI Project Manager Platform</div>
             </div>
             """, unsafe_allow_html=True)
             with st.form("login_form"):
@@ -389,7 +393,7 @@ def _render_login():
                         st.rerun()
                     else:
                         st.error("Invalid credentials or account is inactive.")
-            st.markdown('<div class="login-hint"> </div>',
+            st.markdown('<div class="login-hint">Default admin: admin@qualesce.com / Admin@123</div>',
                         unsafe_allow_html=True)
 
 if st.session_state.current_user is None:
@@ -444,7 +448,8 @@ elif role == "sales":
     _tab_defs = [("dashboard", "📊 Dashboard"), ("presales", "🎯 Presales/POC")]
 elif role in ("lead", "manager"):
     _tab_defs = [("dashboard", "📊 Dashboard"), ("projects", "📋 Projects"),
-                 ("presales", "🎯 Presales/POC"), ("license", "🔑 License"), ("tasks", "📝 Tasks")]
+                 ("presales", "🎯 Presales/POC"), ("license", "🔑 License"),
+                 ("agent", "🤖 AI Agent"), ("tasks", "📝 Tasks")]
 else:
     _tab_defs = [("dashboard", "📊 Dashboard"), ("projects", "📋 Projects"),
                  ("presales", "🎯 Presales/POC"), ("license", "🔑 License"),
@@ -472,7 +477,7 @@ for _i, (_tid, _tlabel) in enumerate(_tab_defs):
 
 if role == "admin":
     nav_c[_n].write("")
-    if nav_c[_n + 1].button(" Add Project", type="primary", use_container_width=True):
+    if nav_c[_n + 1].button("➕ Add Project", type="primary", use_container_width=True):
         st.session_state.show_modal = "add"
         st.rerun()
     if nav_c[_n + 2].button("🔄 Sync Excel", use_container_width=True):
@@ -482,17 +487,17 @@ if role == "admin":
         st.session_state.next_id = int(ids.max()) + 1 if not ids.empty else max(r["id"] for r in BASE_PROJECTS) + 1
         st.session_state.toast = {"msg": "Synced from Excel!", "type": "success"}
         st.rerun()
-    if nav_c[_n + 3].button(" Logout", use_container_width=True):
+    if nav_c[_n + 3].button("🚪 Logout", use_container_width=True):
         st.session_state.current_user = None
         st.rerun()
 elif role in ("lead", "manager"):
     nav_c[_n].write("")
-    if nav_c[_n + 1].button(" Logout", use_container_width=True):
+    if nav_c[_n + 1].button("🚪 Logout", use_container_width=True):
         st.session_state.current_user = None
         st.rerun()
 else:
     nav_c[1].write("")
-    if nav_c[2].button(" Logout", use_container_width=True):
+    if nav_c[2].button("🚪 Logout", use_container_width=True):
         st.session_state.current_user = None
         st.rerun()
 
@@ -533,7 +538,7 @@ if st.session_state.show_modal is not None and role == "admin":
     CLIENT_NEW = "── Type new client ──"
     client_options = all_clients + [CLIENT_NEW]
 
-    title = " Add New Project" if mode == "add" else "✏️ Edit Project"
+    title = "➕ Add New Project" if mode == "add" else "✏️ Edit Project"
     st.markdown(f"### {title}")
     with st.container(border=True):
         c1, c2 = st.columns(2)
@@ -1399,7 +1404,7 @@ elif st.session_state.active_tab == "license" and role != "employee":
 # ══════════════════════════════════════════════════════════════════════════════
 # TAB: AI AGENT
 # ══════════════════════════════════════════════════════════════════════════════
-elif st.session_state.active_tab == "agent" and role == "admin":
+elif st.session_state.active_tab == "agent" and role in ("admin", "lead", "manager"):
     api_key = get_api_key()
     if not api_key:
         api_key = st.text_input("Anthropic API Key", type="password",
