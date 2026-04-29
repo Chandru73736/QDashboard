@@ -472,7 +472,7 @@ for _i, (_tid, _tlabel) in enumerate(_tab_defs):
 
 if role == "admin":
     nav_c[_n].write("")
-    if nav_c[_n + 1].button("➕ Add Project", type="primary", use_container_width=True):
+    if nav_c[_n + 1].button(" Add Project", type="primary", use_container_width=True):
         st.session_state.show_modal = "add"
         st.rerun()
     if nav_c[_n + 2].button("🔄 Sync Excel", use_container_width=True):
@@ -482,17 +482,17 @@ if role == "admin":
         st.session_state.next_id = int(ids.max()) + 1 if not ids.empty else max(r["id"] for r in BASE_PROJECTS) + 1
         st.session_state.toast = {"msg": "Synced from Excel!", "type": "success"}
         st.rerun()
-    if nav_c[_n + 3].button("🚪 Logout", use_container_width=True):
+    if nav_c[_n + 3].button(" Logout", use_container_width=True):
         st.session_state.current_user = None
         st.rerun()
 elif role in ("lead", "manager"):
     nav_c[_n].write("")
-    if nav_c[_n + 1].button("🚪 Logout", use_container_width=True):
+    if nav_c[_n + 1].button(" Logout", use_container_width=True):
         st.session_state.current_user = None
         st.rerun()
 else:
     nav_c[1].write("")
-    if nav_c[2].button("🚪 Logout", use_container_width=True):
+    if nav_c[2].button(" Logout", use_container_width=True):
         st.session_state.current_user = None
         st.rerun()
 
@@ -533,7 +533,7 @@ if st.session_state.show_modal is not None and role == "admin":
     CLIENT_NEW = "── Type new client ──"
     client_options = all_clients + [CLIENT_NEW]
 
-    title = "➕ Add New Project" if mode == "add" else "✏️ Edit Project"
+    title = " Add New Project" if mode == "add" else "✏️ Edit Project"
     st.markdown(f"### {title}")
     with st.container(border=True):
         c1, c2 = st.columns(2)
