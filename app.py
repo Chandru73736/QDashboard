@@ -371,7 +371,7 @@ def _render_login():
             <div style="text-align:center;padding:16px 0 20px">
               <div style="font-size:40px;margin-bottom:8px">🤖</div>
               <div style="font-size:20px;font-weight:800;color:#0F172A;letter-spacing:-.3px">QUALESCE</div>
-              <div style="font-size:12px;color:#64748B;margin-top:4px">AI Project Manager Platform</div>
+              <div style="font-size:12px;color:#64748B;margin-top:4px">Project Manager Platform</div>
             </div>
             """, unsafe_allow_html=True)
             with st.form("login_form"):
@@ -389,7 +389,7 @@ def _render_login():
                         st.rerun()
                     else:
                         st.error("Invalid credentials or account is inactive.")
-            st.markdown('<div class="login-hint">Default admin: admin@qualesce.com / Admin@123</div>',
+            st.markdown('<div class="login-hint"> </div>',
                         unsafe_allow_html=True)
 
 if st.session_state.current_user is None:
